@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BLS</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #3498db 0%, #6dd5fa 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        transition: background 0.3s ease, color 0.3s ease;
+      }
+
+      #theme-toggle {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        padding: 8px 14px;
+        font-size: 14px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background-color: #2980b9;
+        color: white;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        transition: background-color 0.3s ease;
+        z-index: 1000;
+      }
+
+      #theme-toggle:hover {
+        background-color: #1c5980;
+      }
+
+      .container {
+        width: 420px;
+        background: #ffffff;
+        padding: 30px 25px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      #question-text {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 25px;
+        color: #333;
+        padding: 14px 20px;
+        background-color: #e3f2fd;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+        user-select: none;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .btn-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 15px;
+      }
+
+      button {
+        padding: 12px;
+        font-size: 16px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        background-color: #3498db;
+        color: white;
+        transition: background-color 0.3s ease, transform 0.1s ease;
+      }
+
+      button:hover {
+        background-color: #2980b9;
+        transform: scale(1.02);
+      }
+
+      button:disabled {
+        background-color: #bdc3c7;
+        cursor: not-allowed;
+      }
+
+      .correct,
+      .correct:hover {
+        background-color: #2ecc71 !important;
+      }
+
+      .wrong,
+      .wrong:hover {
+        background-color: #e74c3c !important;
+      }
+
+      .answer-btn:last-of-type {
+        margin-bottom: 10px;
+      }
+
+      #question-number {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #666;
+        font-weight: 500;
+        transition: color 0.3s ease;
+      }
+
+      #result-box {
+        margin-top: 20px;
+        font-size: 20px;
+        font-weight: bold;
+        color: #2c3e50;
+        padding: 12px;
+        background-color: #dfefff;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .hide {
+        display: none;
+      }
+
+      body.dark {
+        background: linear-gradient(135deg, #181818 0%, #0c0c0c 100%);
+        color: #ddd;
+      }
+
+      body.dark .container {
+        background: #1c1c1c;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      }
+
+      body.dark #question-text {
+        background-color: #353535;
+        color: #f0f0f0;
+        box-shadow: 0 5px 1px rgba(70, 130, 180, 0.5);
+      }
+
+      body.dark #question-number {
+        color: #bbb;
+      }
+
+      body.dark #result-box {
+        background-color: #3a3a3a;
+        color: #eee;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      }
+
+      body.dark button {
+        background-color: #1b4f72;
+      }
+
+      body.dark button:hover {
+        background-color: #1c5980;
+      }
+
+      body.dark button:disabled {
+        background-color: #555;
+      }
+
+      body.dark .correct,
+      body.dark .correct:hover {
+        background-color: #27ae60;
+      }
+
+      body.dark .wrong,
+      body.dark .wrong:hover {
+        background-color: #c0392b;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="theme-toggle">Dark mode</button>
+
+    <div class="container">
+      <h2 id="quiz-title">BLS</h2>
+
+      <div id="start-box">
+        <button id="start-btn">Start</button>
+      </div>
+
+      <div id="quiz-box" class="hide">
+        <div id="question-number"></div>
+        <div id="question-text"></div>
+        <div id="answer-buttons" class="btn-grid"></div>
+        <button id="next-btn" disabled>Next</button>
+      </div>
+
+      <div id="result-box" class="hide">
+        <h3>Your Score</h3>
+        <p id="score-text"></p>
+        <button id="try-again-btn">Try Again</button>
+      </div>
+    </div>
+
+    <script>
+      const allQuestions = [
+        // Book Questions
+        {
+          question: "* What is the rate of performing chest compression?",
+          options: [
+            "30 per minute",
+            "50 per minute",
+            "80 per minute",
+            "100 per minute",
+          ],
+          correctIndex: 3,
+        },
+        {
+          question: "* How deep should you compress the adult victim’s chest?",
+          options: ["0.25 inch", "0.5 inch", "0.3 inch", "1.5 - 2 inches"],
+          correctIndex: 3,
+        },
+        {
+          question:
+            "* What is the maneuver called to open the victim’s airway?",
+          options: [
+            "Head lift",
+            "Child rise",
+            "Jaw lift",
+            "Head-tilt, chin-lift",
+          ],
+          correctIndex: 3,
+        },
+        {
+          question: "* How do you give mouth to mouth breaths?",
+          options: [
+            "Put your lips in the victim’s lips",
+            "Seal your lips around the outside of the victim’s lips through barrier",
+            "Place a breathing tube in their airway",
+            "Intubate immediately",
+          ],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "* How can you tell if ventilations are going into a victim?",
+          options: [
+            "Watch for chest rise",
+            "Watch for abdominal rise",
+            "Listen for air going through the airway",
+            "Listen for the victim exhaling air",
+          ],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "* What are the three steps to check for a victim’s breathing?",
+          options: [
+            "Look, listen and feel",
+            "Feel, push, and ventilate",
+            "Listen, breathe and exhale",
+            "Look, listen and ventilate",
+          ],
+          correctIndex: 0,
+        },
+        {
+          question: "* You find a victim gasping; what is your next step?",
+          options: [
+            "Give two rescue breaths",
+            "Do a blind finger sweep",
+            "Do abdominal thrusts",
+            "Check for a pulse",
+          ],
+          correctIndex: 3,
+        },
+        {
+          question: "* How do you know when to start compressions?",
+          options: [
+            "The victim has is breathing but has no pulse",
+            "The victim has a pulse but is not breathing",
+            "The victim is breathing and has a pulse",
+            "The victim is not breathing and has no pulse",
+          ],
+          correctIndex: 3,
+        },
+        {
+          question: "* What is early defibrillation needed?",
+          options: [
+            "To synchronize heart rate",
+            "To increase effectiveness of ventilations",
+            "To not have to do compressions",
+            "To increase the likelihood of it working",
+          ],
+          correctIndex: 3,
+        },
+        {
+          question: "* Why should you minimize interruptions during CPR?",
+          options: [
+            "It will be more effective",
+            "To keep your energy up",
+            "To keep a good rhythm for compressions",
+          ],
+          correctIndex: 0,
+        },
+        {
+          question: "* What is the primary purpose of rescue breaths in CPR?",
+          options: [
+            "To provide oxygen to the lungs",
+            "To restart the heart",
+            "To clear the airway",
+            "To stop bleeding",
+          ],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "* How long should you check for breathing in an unresponsive adult?",
+          options: ["5 seconds", "10 seconds", "15 seconds", "20 seconds"],
+          correctIndex: 1,
+        },
+
+        // Questions
+        {
+          question: "What is the primary goal of Basic Life Support (BLS)?",
+          options: [
+            "To perform surgery",
+            "To prevent circulatory or respiratory arrest",
+            "To administer medications",
+            "To diagnose heart disease",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which method is recommended for resuscitation outside the hospital?",
+          options: [
+            "ABC (Airway-Breathing-Circulation)",
+            "CAB (Circulation-Airway-Breathing)",
+            "BAC (Breathing-Airway-Circulation)",
+            "CBA (Circulation-Breathing-Airway)",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "What percentage of oxygen does exhaled air contain?",
+          options: ["5%", "16%", "21%", "30%"],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "How soon should CPR be initiated after cardiac arrest to maximize survival chances?",
+          options: [
+            "Within 1 minute",
+            "Within 4 minutes",
+            "Within 10 minutes",
+            "Within 30 minutes",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "What is the correct hand placement for adult chest compressions?",
+          options: [
+            "Upper third of the sternum",
+            "Lower half of the sternum",
+            "Over the xiphoid process",
+            "On the ribs",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "What is the correct compression-to-ventilation ratio for adult CPR?",
+          options: ["5:1", "15:2", "30:2", "50:5"],
+          correctIndex: 2,
+        },
+
+        {
+          question: "Which of the following is NOT a cause of cardiac arrest?",
+          options: [
+            "Hypoxia",
+            "Pulmonary embolism",
+            "Hypertension",
+            "Electrocution",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question:
+            "What is the first step in assessing an unresponsive adult?",
+          options: [
+            "Check for breathing",
+            "Check for a pulse",
+            "Shake and shout to assess responsiveness",
+            "Begin chest compressions",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question: "What is the most common complication of CPR?",
+          options: ["Broken ribs", "Vomiting", "Infection", "Pneumothorax"],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "Which of the following ECG rhythms is NOT seen in cardiac arrest?",
+          options: [
+            "Ventricular fibrillation (VF)",
+            "Asystole",
+            "Sinus tachycardia",
+            "Pulseless electrical activity (PEA)",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question:
+            "What is the correct method to open an unresponsive victim’s airway?",
+          options: [
+            "Jaw thrust",
+            "Head-tilt, chin-lift",
+            "Neck extension",
+            "Tongue pull",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "When should defibrillation be performed in cardiac arrest?",
+          options: [
+            "After 5 minutes of CPR",
+            "Only if the victim regains consciousness",
+            "As soon as possible if VF is detected",
+            "After intubation",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question:
+            "What is the survival rate if CPR is started within 4 minutes and defibrillation within 10 minutes?",
+          options: ["10%", "22%", "40%", "75%"],
+          correctIndex: 2,
+        },
+
+        {
+          question: "Which of the following is a sign of effective CPR?",
+          options: [
+            "Pupil dilation",
+            "Chest rise during ventilation",
+            "Absence of pulse",
+            "Slow breathing",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "What should you do if a victim starts vomiting during CPR?",
+          options: [
+            "Continue compressions",
+            "Turn the head to the side and clear vomit",
+            "Stop CPR immediately",
+            "Administer anti-nausea medication",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "What is the correct ventilation duration for each rescue breath?",
+          options: ["0.5 seconds", "1 second", "2 seconds", "3 seconds"],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "What is the first step in the BLS for an unresponsive adult?",
+          options: [
+            "Check for breathing",
+            "Start chest compressions",
+            "Activate emergency response",
+            "Open the airway",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question: "What is the correct compression rate for adult CPR?",
+          options: [
+            "60 per minute",
+            "80 per minute",
+            "100 per minute",
+            "120 per minute",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question: "Which of the following is NOT a sign of cardiac arrest?",
+          options: [
+            "Unresponsiveness",
+            "Absence of pulse",
+            "Normal breathing",
+            "Gasping breaths",
+          ],
+          correctIndex: 2,
+        },
+
+        {
+          question:
+            "What is the role of the rescuer when using a bag-mask device?",
+          options: [
+            "Only squeeze the bag",
+            "Ensure a proper seal and lift the jaw",
+            "Hold the victim’s head still",
+            "Monitor ECG",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "What is the most sensitive organ to oxygen deprivation?",
+          options: ["Heart", "Lungs", "Brain", "Liver"],
+          correctIndex: 2,
+        },
+
+        {
+          question: "What is the correct sequence for the Chain of Survival?",
+          options: [
+            "Early CPR → Early defibrillation → Early advanced care",
+            "Early defibrillation → Early CPR → Early advanced care",
+            "Early advanced care → Early CPR → Early defibrillation",
+          ],
+          correctIndex: 0,
+        },
+
+        {
+          question:
+            "What is the primary reason for minimizing interruptions during CPR?",
+          options: [
+            "To conserve energy",
+            "To maintain blood flow to vital organs",
+            "To prevent rib fractures",
+            "To reduce infection risk",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question: "Which of the following is a contraindication for CPR?",
+          options: [
+            "Unresponsiveness",
+            "Death confirmed by a physician",
+            "Gasping breaths",
+            "No pulse",
+          ],
+          correctIndex: 1,
+        },
+
+        {
+          question:
+            "What is the primary difference between clinical and biological death?",
+          options: [
+            "Clinical death is reversible",
+            "Biological death occurs immediately",
+            "Clinical death involves brain damage",
+            "Biological death is temporary",
+          ],
+          correctIndex: 0,
+        },
+
+        {
+          question:
+            "What is the correct energy level for the first defibrillation shock?",
+          options: ["100 joules", "200 joules", "300 joules", "360 joules"],
+          correctIndex: 1,
+        },
+        {
+          question: "What is the primary purpose of chest compressions in CPR?",
+          options: [
+            "To oxygenate the blood",
+            "To restart the heart",
+            "To circulate blood manually",
+            "To clear the airway",
+          ],
+          correctIndex: 2,
+        },
+        {
+          question: "Which of the following is a key step in the CAB sequence?",
+          options: [
+            "Assessing airway first",
+            "Assessing breathing first",
+            "Begin chest compressions first",
+            "Begin defibrillation first",
+          ],
+          correctIndex: 2,
+        },
+        {
+          question:
+            "What is the correct position for performing CPR on an adult?",
+          options: [
+            "On a soft surface",
+            "On a hard surface",
+            "In a seated position",
+            "On the side",
+          ],
+          correctIndex: 1,
+        },
+        {
+          question: "What is the primary risk of delaying CPR?",
+          options: ["Broken ribs", "Brain damage", "Infection", "Vomiting"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "What is the correct action if a victim regains a pulse but is not breathing?",
+          options: [
+            "Continue CPR",
+            "Stop CPR and monitor",
+            "Provide rescue breaths",
+            "Begin defibrillation",
+          ],
+          correctIndex: 2,
+        },
+        {
+          question:
+            "What is the primary reason for using a barrier device during rescue breaths?",
+          options: [
+            "To improve oxygen delivery",
+            "To prevent infection",
+            "To increase chest rise",
+            "To stabilize the airway",
+          ],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "What is the correct method to confirm effective chest compressions?",
+          options: [
+            "Check for pupil dilation",
+            "Monitor blood pressure",
+            "Observe chest rise",
+            "Feel for a carotid pulse",
+          ],
+          correctIndex: 3,
+        },
+        {
+          question:
+            "What is the correct action if a victim has a pulse but is not breathing?",
+          options: [
+            "Begin chest compressions",
+            "Provide rescue breaths only",
+            "Wait for EMS",
+            "Perform abdominal thrusts",
+          ],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "CPR can keep a person alive until advanced medical help arrives.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question: "The CAB method is only used in hospital settings.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "Brain damage occurs after 10 minutes of oxygen deprivation.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "The correct compression depth for adults is 1 inch.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "Rescue breaths should last 2 seconds each.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "Pupil dilation is a reliable sign of death.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "Cardiac massage provides 50% of normal cardiac output.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "Early defibrillation increases survival chances in VF.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question: "Gasping breaths are a sign of effective CPR.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "The head-tilt chin-lift maneuver is used to check for a pulse.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "Vomiting is a rare complication of CPR.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "Room air contains 16% oxygen.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "CPR should be stopped immediately if ribs crack.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "The sternum should be compressed at a rate of 80 per minute.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question: "Biological death is reversible with CPR.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "The carotid pulse is checked for 5-10 seconds in an unresponsive adult.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question: "If ventricular fibrillation persists start intubation.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+        {
+          question:
+            "The xiphoid process is the correct landmark for chest compressions.",
+          options: ["True", "False"],
+          correctIndex: 1,
+        },
+        {
+          question:
+            "The survival rate for cardiac arrest is higher with CPR.",
+          options: ["True", "False"],
+          correctIndex: 0,
+        },
+      ];
+
+      let currentQuestionIndex = 0;
+      let score = 0;
+
+      const startBtn = document.getElementById("start-btn");
+      const nextBtn = document.getElementById("next-btn");
+      const tryAgainBtn = document.getElementById("try-again-btn");
+      const quizBox = document.getElementById("quiz-box");
+      const startBox = document.getElementById("start-box");
+      const questionNumberElement = document.getElementById("question-number");
+      const questionText = document.getElementById("question-text");
+      const answerButtons = document.getElementById("answer-buttons");
+      const resultBox = document.getElementById("result-box");
+      const scoreText = document.getElementById("score-text");
+      const themeToggleBtn = document.getElementById("theme-toggle");
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+
+      function isTrueFalseQuestion(questionObj) {
+        const opts = questionObj.options;
+        return (
+          opts.length === 2 && opts.includes("True") && opts.includes("False")
+        );
+      }
+
+      function startQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        shuffleArray(allQuestions);
+        startBox.classList.add("hide");
+        resultBox.classList.add("hide");
+        quizBox.classList.remove("hide");
+        setNextQuestion();
+      }
+
+      function setNextQuestion() {
+        resetState();
+        if (currentQuestionIndex < allQuestions.length) {
+          showQuestion(allQuestions[currentQuestionIndex]);
+        } else {
+          showResult();
+        }
+      }
+
+      function showQuestion(questionObj) {
+        questionNumberElement.textContent = `Question ${
+          currentQuestionIndex + 1
+        } of ${allQuestions.length}`;
+        questionText.textContent = questionObj.question;
+
+        const optionsWithFlag = questionObj.options.map((opt, i) => ({
+          text: opt,
+          isCorrect: i === questionObj.correctIndex,
+        }));
+
+        if (!isTrueFalseQuestion(questionObj)) {
+          const fixedOptions = [
+            "All of the above",
+            "All are true",
+            "All are false",
+            "All are correct",
+            "All of the answers are correct",
+            "All of the answers are recommended",
+            "None of the above",
+          ];
+          const fixedOptionIndex = optionsWithFlag.findIndex((option) =>
+            fixedOptions.includes(option.text.trim())
+          );
+
+          if (fixedOptionIndex !== -1) {
+            const fixedOption = optionsWithFlag.splice(fixedOptionIndex, 1)[0];
+            shuffleArray(optionsWithFlag);
+            optionsWithFlag.push(fixedOption);
+          } else {
+            shuffleArray(optionsWithFlag);
+          }
+        }
+
+        optionsWithFlag.forEach((option) => {
+          const button = document.createElement("button");
+          button.textContent = option.text;
+          button.classList.add("answer-btn");
+          button.addEventListener("click", () =>
+            selectAnswer(button, option.isCorrect)
+          );
+          answerButtons.appendChild(button);
+        });
+      }
+
+      function resetState() {
+        nextBtn.disabled = true;
+        answerButtons.innerHTML = "";
+      }
+
+      function selectAnswer(button, isCorrect) {
+        const buttons = answerButtons.querySelectorAll("button");
+        buttons.forEach((btn) => (btn.disabled = true));
+
+        if (isCorrect) {
+          button.classList.add("correct");
+          score++;
+        } else {
+          button.classList.add("wrong");
+          buttons.forEach((btn) => {
+            if (
+              btn.textContent ===
+              allQuestions[currentQuestionIndex].options[
+                allQuestions[currentQuestionIndex].correctIndex
+              ]
+            ) {
+              btn.classList.add("correct");
+            }
+          });
+        }
+
+        nextBtn.disabled = false;
+      }
+
+      function showResult() {
+        quizBox.classList.add("hide");
+        resultBox.classList.remove("hide");
+        scoreText.textContent = `${score} out of ${allQuestions.length}`;
+      }
+
+      // Theme toggle
+      themeToggleBtn.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggleBtn.textContent = document.body.classList.contains("dark")
+          ? "Light mode"
+          : "Dark mode";
+      });
+
+      // Event listeners
+      startBtn.addEventListener("click", startQuiz);
+      nextBtn.addEventListener("click", () => {
+        currentQuestionIndex++;
+        setNextQuestion();
+      });
+      tryAgainBtn.addEventListener("click", startQuiz);
+    </script>
+  </body>
+</html>
